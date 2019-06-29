@@ -1,6 +1,7 @@
 package com.cursoandroid.nearbyconnections;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -34,23 +35,84 @@ public class MainActivity extends AppCompatActivity {
     // Consejo: utiliza como SERVICE_ID el nombre de tu paquete
     private static final String SERVICE_ID = "com.cursoandroid.nearbyconnections";
     private static final String TAG = "Mobile:";
-    Button botonLED;
+    Button botonLED,bScan,bConnect,bOn,bOff,bDisconnect;
     TextView textview;
+    //**********************************
+    private String thisEndpointId;
+    //**********************************
+
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textview = (TextView) findViewById(R.id.textView1);
-        botonLED = (Button) findViewById(R.id.buttonLED);
+        //botonLED = (Button) findViewById(R.id.buttonLED);
+        bScan = (Button) findViewById(R.id.b_scan);
+        bConnect = (Button) findViewById(R.id.b_connect);
+        bOn = (Button) findViewById(R.id.b_on);
+        bOff = (Button) findViewById(R.id.b_off);
+        bDisconnect = (Button) findViewById(R.id.b_disconnect);
 
-        botonLED.setOnClickListener(new View.OnClickListener() {
+        /*botonLED.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.i(TAG, "Boton presionado");
                 startDiscovery();
                 textview.setText("Buscando...");
             }
+        });*/
+
+        bConnect.setEnabled(false);
+        bOn.setEnabled(false);
+        bOff.setEnabled(false);
+        bDisconnect.setEnabled(false);
+
+        //ACCIONES AL PULSAR ************************************
+        bScan.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Log.i(TAG, "Botón Scan presionado");
+                //Buscar
+                startDiscovery();
+                textview.setText("Buscando...");
+            }
         });
 
+        bConnect.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Log.i(TAG, "Botón Connect presionado");
+                //Conectar
+                conectar();
+                textview.setText("Conectando...");
+            }
+        });
+
+        bOn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Log.i(TAG, "Presionado ON");
+                //Encender LED
+                sendData(thisEndpointId, "SWITCH ON");
+                textview.setText("Encendiendo LED...");
+            }
+        });
+
+        bOff.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Log.i(TAG, "Presionado OFF");
+                //Apagar LED
+                sendData(thisEndpointId, "SWITCH OFF");
+                textview.setText("Apagando LED...");
+            }
+        });
+
+        bDisconnect.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Log.i(TAG, "Presionado Disconnect");
+                //Desconectar
+                Nearby.getConnectionsClient(getApplicationContext()).disconnectFromEndpoint(thisEndpointId);
+                textview.setText("Desconectando...");
+            }
+        });
+        //************************************************************
+        
         // Comprobación de permisos peligrosos. Se pide permiso al usuario en tiempo de ejecución
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -62,8 +124,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Gestión de permisos
-    @Override  public void onRequestPermissionsResult(int requestCode,
-                                                      String permissions[], int[] grantResults) {
+    @Override  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION: {
                 if (grantResults.length > 0
@@ -106,17 +167,18 @@ public class MainActivity extends AppCompatActivity {
         //Se lanza cuando detecta un anunciante
         @Override public void onEndpointFound(String endpointId, DiscoveredEndpointInfo discoveredEndpointInfo) {
             Log.i(TAG, "Descubierto dispositivo con Id: " + endpointId);
+            thisEndpointId = endpointId;
             String discoveredPointName = "Descubierto: " +discoveredEndpointInfo.getEndpointName();
             textview.setText(discoveredPointName);
             stopDiscovery();
+            bConnect.setEnabled(true);
             // Iniciamos la conexión con al anunciante "Nearby LED"
-            Log.i(TAG, "Conectando...");
+            /*Log.i(TAG, "Conectando...");
             Nearby.getConnectionsClient(getApplicationContext())
                     .requestConnection("Nearby LED",endpointId,mConnectionLifecycleCallback)
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override public void onSuccess(Void unusedResult) {
-                            Log.i(TAG, "Solicitud lanzada, falta que ambos " +
-                                    "lados acepten");
+                            Log.i(TAG, "Solicitud lanzada, falta que ambos lados acepten");
                         }
                     })
                     .addOnFailureListener(new OnFailureListener() {
@@ -124,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
                             Log.e(TAG, "Error en solicitud de conexión", e);
                             textview.setText("Desconectado");
                         }
-                    });
+                    });*/
         }
 
         //Se lanza cuando se pierde un anunciante
@@ -143,15 +205,20 @@ public class MainActivity extends AppCompatActivity {
                             .acceptConnection(endpointId, mPayloadCallback);
                 }
 
-                //Se invoca cuando eporceso de conexión ha finalizado
+                //Se invoca cuando el proceso de conexión ha finalizado
                 @Override public void onConnectionResult(String endpointId,
                                                          ConnectionResolution result) {
                     switch (result.getStatus().getStatusCode()) {
                         case ConnectionsStatusCodes.STATUS_OK:
                             Log.i(TAG, "Estamos conectados!");
                             textview.setText("Conectado");
+                            bScan.setEnabled(false);
+                            bConnect.setEnabled(false);
+                            bOn.setEnabled(true);
+                            bOff.setEnabled(true);
+                            bDisconnect.setEnabled(true);
                             //La conexión es correcta. sendData() para enviar el mensaje “ACCION” a la RPi3
-                            sendData(endpointId, "SWITCH");
+                            //sendData(endpointId, "SWITCH");  //********************************************
                             break;
                         case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
                             Log.i(TAG, "Conexión rechazada por uno o ambos lados");
@@ -164,10 +231,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
+
+
                 @Override public void onDisconnected(String endpointId) {
-                    Log.i(TAG, "Desconexión del endpoint, no se pueden " +
-                            "intercambiar más datos.");
+                    Log.i(TAG, "Desconexión del endpoint, no se pueden intercambiar más datos.");
                     textview.setText("Desconectado");
+                    bOn.setEnabled(false);
+                    bOff.setEnabled(false);
+                    bDisconnect.setEnabled(false);
+                    bConnect.setEnabled(true);
+                    bScan.setEnabled(true);
                 }
             };
 
@@ -193,5 +266,25 @@ public class MainActivity extends AppCompatActivity {
         }
         Nearby.getConnectionsClient(this).sendPayload(endpointId, data);
         Log.i(TAG, "Mensaje enviado.");
+    }
+
+    private void conectar(){
+        // Iniciamos la conexión con al anunciante "Nearby LED"
+        Log.i(TAG, "Conectando...");
+
+        Nearby.getConnectionsClient(getApplicationContext())
+                //.requestConnection("Nearby LED",thisEndpointId,mConnectionLifecycleCallback)
+                .requestConnection(thisEndpointId,thisEndpointId,mConnectionLifecycleCallback)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override public void onSuccess(Void unusedResult) {
+                        Log.i(TAG, "Solicitud lanzada, falta que ambos lados acepten");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Error en solicitud de conexión", e);
+                        textview.setText("Desconectado");
+                    }
+                });
     }
 }

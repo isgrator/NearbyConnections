@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
     }
 
     private void startAdvertising() {
+
         Nearby.getConnectionsClient(this).startAdvertising(
                 "Nearby LED", SERVICE_ID, mConnectionLifecycleCallback,
                 new AdvertisingOptions(Strategy.P2P_STAR))
@@ -76,7 +77,7 @@ public class MainActivity extends Activity {
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Error al comenzar el modo anunciante", e);
+                        Log.e(TAG, "Error al comenzar el modo anunciante.", e);
                     }
                 });
     }
@@ -95,13 +96,11 @@ public class MainActivity extends Activity {
                     //Lugar ideal para hacer un proceso de autenticación *************
                     //****************************************************************
                     // Aceptamos la conexión automáticamente en ambos lados.
-                    Nearby.getConnectionsClient(getApplicationContext())
-                            .acceptConnection(endpointId, mPayloadCallback);
+                    Nearby.getConnectionsClient(getApplicationContext()).acceptConnection(endpointId, mPayloadCallback);
                     Log.i(TAG, "Aceptando conexión entrante sin autenticación");
                 }
 
-                @Override public void onConnectionResult(String endpointId,
-                                                         ConnectionResolution result) {
+                @Override public void onConnectionResult(String endpointId, ConnectionResolution result) {
                     switch (result.getStatus().getStatusCode()) {
                         case ConnectionsStatusCodes.STATUS_OK:
                             Log.i(TAG, "Estamos conectados!");
@@ -109,6 +108,7 @@ public class MainActivity extends Activity {
                             break;
                         case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
                             Log.i(TAG, "Conexión rechazada por uno o ambos lados");
+                            startAdvertising(); //***************************************
                             break;
                         case ConnectionsStatusCodes.STATUS_ERROR:
                             Log.i(TAG, "Conexión perdida antes de ser aceptada");
@@ -118,8 +118,7 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void onDisconnected(String endpointId) {
-                    Log.i(TAG, "Desconexión del endpoint, no se pueden " +
-                            "intercambiar más datos.");
+                    Log.i(TAG, "Desconexión del endpoint, no se pueden intercambiar más datos.");
                     startAdvertising();
                 }
             };
@@ -129,16 +128,17 @@ public class MainActivity extends Activity {
         //Recibe la carga tipo BYTE que hemos enviado desde el móvil.
         @Override public void onPayloadReceived(String endpointId, Payload payload) {
             String message = new String(payload.asBytes());
-            Log.i(TAG, "Se ha recibido una transferencia desde (" +
-                    endpointId + ") con el siguiente contenido: " + message);
-            disconnect(endpointId);  //Cierra nuestro lado de la conexión
+            Log.i(TAG, "Se ha recibido una transferencia desde (" +endpointId + ") con el siguiente contenido: " + message);
+            //disconnect(endpointId);  //Cierra nuestro lado de la conexión
             switch (message) {
-                case "SWITCH":
-                    switchLED();  //Creo que esto equivale a doRemoteAction() de los apuntes (U5, pág. 32)
+                case "SWITCH ON":
+                    switchLED(true);
+                    break;
+                case "SWITCH OFF":
+                    switchLED(false);
                     break;
                 default:
-                    Log.w(TAG, "No existe una acción asociada a este " +
-                            "mensaje.");
+                    Log.w(TAG, "No existe una acción asociada a este mensaje: "+message);
                     break;
             }
         }
@@ -148,9 +148,9 @@ public class MainActivity extends Activity {
         }
     };
 
-    public void switchLED() {
+    public void switchLED(boolean SWITCHON) {
         try {
-            if (ledStatus) {
+            if (!SWITCHON) {
                 mLedGpio.setValue(false);
                 ledStatus = false;
                 Log.i(TAG, "LED OFF");
@@ -165,8 +165,7 @@ public class MainActivity extends Activity {
     }
 
     protected void disconnect(String endpointId) {
-        Nearby.getConnectionsClient(this)
-                .disconnectFromEndpoint(endpointId);
+        Nearby.getConnectionsClient(this).disconnectFromEndpoint(endpointId);
         Log.i(TAG, "Desconectado del endpoint (" + endpointId + ").");
         startAdvertising();
     }
