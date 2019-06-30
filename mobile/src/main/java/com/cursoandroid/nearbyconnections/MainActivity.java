@@ -28,6 +28,7 @@ import com.google.android.gms.nearby.connection.Strategy;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+
 import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,20 +47,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textview = (TextView) findViewById(R.id.textView1);
-        //botonLED = (Button) findViewById(R.id.buttonLED);
+        botonLED = (Button) findViewById(R.id.buttonLED);
         bScan = (Button) findViewById(R.id.b_scan);
         bConnect = (Button) findViewById(R.id.b_connect);
         bOn = (Button) findViewById(R.id.b_on);
         bOff = (Button) findViewById(R.id.b_off);
         bDisconnect = (Button) findViewById(R.id.b_disconnect);
 
-        /*botonLED.setOnClickListener(new View.OnClickListener() {
+        botonLED.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.i(TAG, "Boton presionado");
-                startDiscovery();
-                textview.setText("Buscando...");
+                //startDiscovery();
+                sendData(thisEndpointId, "WIFI");
+                textview.setText("Configurando WiFi...");
             }
-        });*/
+        });
 
         bConnect.setEnabled(false);
         bOn.setEnabled(false);

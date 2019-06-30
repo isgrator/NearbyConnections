@@ -43,6 +43,10 @@ import java.io.IOException;
  * @see <a href="https://github.com/androidthings/contrib-drivers#readme">https://github.com/androidthings/contrib-drivers#readme</a>
  */
 public class MainActivity extends Activity {
+
+    private static final String SSID ="Emerald_City";
+    private static final String PASS ="Devolo64n630xDevolo";
+
     // Consejo: utiliza como SERVICE_ID el nombre de tu paquete
     private static final String SERVICE_ID = "com.cursoandroid.nearbyconnections";
     private static final String TAG = "Things:";
@@ -50,8 +54,14 @@ public class MainActivity extends Activity {
     public Gpio mLedGpio;
     private Boolean ledStatus;
 
+    private WifiUtils wifiutils;
+
+
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        wifiutils = new WifiUtils(this);
+
         // Configuración del LED
         ledStatus = false;
         PeripheralManager service = PeripheralManager.getInstance();
@@ -137,6 +147,9 @@ public class MainActivity extends Activity {
                 case "SWITCH OFF":
                     switchLED(false);
                     break;
+                case "WIFI":
+                    doRemoteAction();
+                    break;
                 default:
                     Log.w(TAG, "No existe una acción asociada a este mensaje: "+message);
                     break;
@@ -183,5 +196,11 @@ public class MainActivity extends Activity {
                 mLedGpio = null;
             }
         }
+    }
+
+    public void doRemoteAction() {
+        wifiutils.connectToAP(SSID, PASS);
+        wifiutils.listNetworks();
+        wifiutils.getConnectionInfo();
     }
 }
